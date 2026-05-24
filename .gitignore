@@ -1,0 +1,63 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.navigation/
+captures/
+
+# Local configuration file (sdk path, etc) - must NOT be committed
+local.properties
+
+# Log Files
+*.log
+
+# Android Studio Navigation editor temp files
+.DS_Store
+
+# Keystores
+*.jks
+*.keystore
+
+# Kotlin
+.kotlin/
+
+# Build outputs
+*.apk
+*.aab
+*.aar
+*.ap_
+*.dex
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+proguard/
+
+# OS
+Thumbs.db
+
+# Claude / serena
+.serena/
+.claude/
+
+# Coverage
+jacoco.exec
+
+# Personal / internal notes - kept locally, never committed.
+# Use this folder for any private docs (branching cheat sheets, draft ideas, etc.)
+.notes/

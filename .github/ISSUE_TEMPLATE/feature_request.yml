@@ -1,0 +1,51 @@
+name: Feature request
+description: Suggest a new capability or improvement for Tessera.
+title: "[Feature] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tessera keeps a deliberately small API surface (~10 public types).
+        New additions need a clear use case that can't be solved by the
+        existing primitives. Please describe the problem first, then the
+        proposed shape.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to accomplish? What's the current pain?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Sketch the API or behaviour you have in mind. A Kotlin snippet beats prose.
+      render: kotlin
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds have you tried? Why aren't they enough?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - "Core (:tessera)"
+        - "Hilt integration (:tessera-hilt)"
+        - "Documentation / samples"
+        - "Tooling / CI"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context

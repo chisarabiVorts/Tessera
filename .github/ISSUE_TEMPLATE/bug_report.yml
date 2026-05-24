@@ -1,0 +1,67 @@
+name: Bug report
+description: Report unexpected or broken behaviour in Tessera.
+title: "[Bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please fill in the sections below so we can
+        reproduce the issue. If you don't know what to put somewhere, write
+        "n/a" rather than leaving it empty.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences - what's broken?
+      placeholder: "Navigator.popBackStackTo(...) throws when the target route isn't on the back stack, but the KDoc says it should be a no-op."
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Minimal steps or a code snippet that reproduces the issue. Link to a sample branch if you have one.
+      render: kotlin
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include stack traces in full, please.
+    validations:
+      required: true
+
+  - type: input
+    id: tessera-version
+    attributes:
+      label: Tessera version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: Kotlin / AGP / Compose / Navigation versions, target/min SDK, DI framework (Hilt / Koin / none).
+      placeholder: "Kotlin 2.0.21, AGP 8.6.0, Compose BOM 2024.09, Navigation 2.8.0, minSdk 24, Hilt"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Anything else relevant - workarounds tried, suspected root cause, related issues.

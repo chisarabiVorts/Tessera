@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+      - 'epic/**'
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  test-and-build:
+    name: Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Run unit tests
+        run: ./gradlew :tessera:test :tessera-hilt:test
+
+      - name: Build library AARs
+        run: ./gradlew :tessera:assemble :tessera-hilt:assemble
+
+      - name: Build sample APKs (debug)
+        run: ./gradlew :sample:app:assembleDebug :sample:app-multitab:assembleDebug
+
+      - name: Build sample APKs (release with R8) - verifies consumer-rules.pro
+        run: ./gradlew :sample:app:assembleRelease :sample:app-multitab:assembleRelease
+
+      - name: Publish JUnit test report
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: '**/build/test-results/test*/TEST-*.xml'
+          check_name: Unit test results
+          require_tests: true
+          fail_on_failure: true
+
+      - name: Upload test report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: |
+            tessera/build/reports/tests/
+            tessera/build/test-results/
+            tessera-hilt/build/reports/tests/
+            tessera-hilt/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
