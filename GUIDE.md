@@ -54,8 +54,8 @@ plugins {
 
 dependencies {
     // Координаты JitPack: com.github.{user}.{repo}:{module}:{version}
-    implementation("com.github.chisarabiVorts.tessera:tessera:0.1.0")
-    implementation("com.github.chisarabiVorts.tessera:tessera-hilt:0.1.0")  // готовые @Provides
+    implementation("com.github.chisarabiVorts.tessera:tessera:0.1.1")
+    implementation("com.github.chisarabiVorts.tessera:tessera-hilt:0.1.1")  // готовые @Provides
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

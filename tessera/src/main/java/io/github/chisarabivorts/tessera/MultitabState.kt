@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavDeepLink
 import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavDestination
@@ -113,6 +114,21 @@ public class MultitabState internal constructor(
      * [rememberMultitabState].
      */
     private val resetActiveTabOnReselect: Boolean = false,
+    /**
+     * Whether [selectTab] debounces taps that arrive while a tab transition is
+     * still animating.
+     *
+     *  - `true` (default) - a tap whose switch lands while the root controller
+     *    is mid-transition is dropped, so a burst of rapid bottom-bar taps does
+     *    not enqueue a backlog of transitions (the "tab switch hangs" symptom).
+     *  - `false` - every tap navigates immediately, preserving the raw Jetpack
+     *    Navigation behaviour. Use this if you drive your own custom transition
+     *    handling and want full control.
+     *
+     * Configured via the `debounceRapidTabSwitches` parameter of
+     * [rememberMultitabState].
+     */
+    private val debounceRapidTabSwitches: Boolean = true,
 ) {
 
     private val tabNavControllers: MutableMap<String, NavHostController> = mutableMapOf()
@@ -183,6 +199,17 @@ public class MultitabState internal constructor(
             if (resetActiveTabOnReselect) resetActiveTabToStart(tabRoute)
             return
         }
+        // Debounce rapid taps. Jetpack Navigation does not drop a navigate()
+        // issued while the previous tab transition is still animating - it
+        // updates the back stack again immediately, so a burst of fast clicks
+        // stacks up transitions (each tab swap also re-runs the target tab's
+        // nested NavHost via restoreState). The visible result is one tap that
+        // appears to "hang" while the queued transitions drain. The root's
+        // current back stack entry only reaches RESUMED once its transition has
+        // settled, so a non-RESUMED current entry means a switch is in flight -
+        // skip this tap rather than enqueue another swap. Opt out via
+        // debounceRapidTabSwitches to keep raw Jetpack Navigation behaviour.
+        if (debounceRapidTabSwitches && isRootTransitionInFlight()) return
         rootNavController.navigate(tabRoute) {
             popUpTo(rootNavController.graph.findStartDestination().id) {
                 saveState = true
@@ -190,6 +217,29 @@ public class MultitabState internal constructor(
             launchSingleTop = true
             restoreState = true
         }
+    }
+
+    /**
+     * True while the root controller is mid tab-transition.
+     *
+     * Used by [selectTab] to debounce rapid bottom-bar taps: navigating again
+     * before the running transition settles would enqueue another swap, and a
+     * burst of fast clicks compounds into a visible delay.
+     *
+     * The signal is the current back stack entry's lifecycle state. With a
+     * resumed `NavHost`, a settled destination sits at [Lifecycle.State.RESUMED];
+     * Jetpack Navigation holds the incoming entry at [Lifecycle.State.STARTED]
+     * for the duration of the enter/exit animation and only promotes it to
+     * RESUMED once that transition completes. So STARTED == "switch in flight".
+     *
+     * We match STARTED specifically rather than "below RESUMED": before the
+     * host is ever resumed (e.g. unit tests, or the brief window before the
+     * root `NavHost` first composes) entries cap at CREATED, which must NOT be
+     * read as a transition - otherwise the guard would block every switch.
+     */
+    private fun isRootTransitionInFlight(): Boolean {
+        val state = rootNavController.currentBackStackEntry?.lifecycle?.currentState ?: return false
+        return state == Lifecycle.State.STARTED
     }
 
     /**
@@ -422,6 +472,13 @@ public class MultitabState internal constructor(
  *   Material 3 spec). `true` - pop that tab's nested back stack down to its
  *   [TabFeatureEntry.startDestination] (Instagram / Twitter style "tap-to-top").
  *
+ * @param debounceRapidTabSwitches controls whether [MultitabState.selectTab]
+ *   ignores taps that arrive while a tab transition is still animating.
+ *   `true` (default) - drop the tap so a burst of rapid bottom-bar clicks
+ *   does not enqueue a backlog of transitions (avoids the "tab switch hangs"
+ *   symptom). `false` - navigate on every tap, keeping the raw Jetpack
+ *   Navigation behaviour; use this if you manage your own transition handling.
+ *
  * @throws IllegalArgumentException if [tabs] is empty or contains duplicate routes.
  */
 @Composable
@@ -431,6 +488,7 @@ public fun rememberMultitabState(
     @Suppress("UNUSED_PARAMETER") resultNavigator: ResultNavigator,
     tabDeeplinkNavigator: TabDeeplinkNavigator,
     resetActiveTabOnReselect: Boolean = false,
+    debounceRapidTabSwitches: Boolean = true,
 ): MultitabState {
     require(tabs.isNotEmpty()) { "rememberMultitabState requires at least one tab" }
     requireDistinctTabRoutes(tabs)
@@ -443,12 +501,19 @@ public fun rememberMultitabState(
         derivedStateOf { currentBackStackEntryState.value?.destination?.route }
     }
 
-    val state = remember(sortedTabs, rootNavController, selectedTab, resetActiveTabOnReselect) {
+    val state = remember(
+        sortedTabs,
+        rootNavController,
+        selectedTab,
+        resetActiveTabOnReselect,
+        debounceRapidTabSwitches,
+    ) {
         MultitabState(
             tabs = sortedTabs,
             rootNavController = rootNavController,
             selectedTab = selectedTab,
             resetActiveTabOnReselect = resetActiveTabOnReselect,
+            debounceRapidTabSwitches = debounceRapidTabSwitches,
         )
     }
 

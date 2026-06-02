@@ -4,6 +4,9 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 import androidx.navigation.NavDeepLink
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.ComposeNavigator
@@ -30,6 +33,12 @@ class MultitabStateTest {
         viewportWidth = 1f,
         viewportHeight = 1f,
     ).build()
+
+    /** A standalone [LifecycleOwner] pinned at [state] for test controllers. */
+    private fun lifecycleOwnerAt(state: Lifecycle.State): LifecycleOwner = object : LifecycleOwner {
+        private val registry = LifecycleRegistry(this).apply { currentState = state }
+        override val lifecycle: Lifecycle get() = registry
+    }
 
     private fun controller(routes: List<String>): TestNavHostController {
         val c = TestNavHostController(RuntimeEnvironment.getApplication())
@@ -225,6 +234,80 @@ class MultitabStateTest {
     fun `selectTab throws for an unknown tab`() {
         val state = stateFor(listOf(FakeTab("home_tab", "home")))
         state.selectTab("unknown")
+    }
+
+    @Test
+    fun `selectTab is debounced while the root is mid-transition (current entry STARTED)`() {
+        // Rapid bottom-bar taps regression: Jetpack Navigation holds the
+        // incoming entry at STARTED for the duration of the tab transition and
+        // only promotes it to RESUMED once the animation completes. selectTab
+        // must treat STARTED as "switch in flight" and skip, so a burst of fast
+        // clicks does not enqueue a backlog of transitions.
+        val tabs = listOf(
+            FakeTab("home_tab", "home"),
+            FakeTab("settings_tab", "settings"),
+        )
+        // Root controller whose host is only STARTED - its current entry's
+        // lifecycle reports STARTED, simulating an in-flight transition.
+        val rootController = TestNavHostController(RuntimeEnvironment.getApplication()).apply {
+            setLifecycleOwner(lifecycleOwnerAt(Lifecycle.State.STARTED))
+            navigatorProvider.addNavigator(ComposeNavigator())
+            setGraph(
+                createGraph(startDestination = "home_tab") {
+                    composable("home_tab") {}
+                    composable("settings_tab") {}
+                },
+                null,
+            )
+        }
+        val state = MultitabState(
+            tabs = tabs,
+            rootNavController = rootController,
+            selectedTab = mutableStateOf("home_tab"),
+        )
+
+        state.selectTab("settings_tab")
+
+        assertEquals(
+            "switch must be debounced while the previous transition is still running",
+            "home_tab",
+            rootController.currentDestination?.route,
+        )
+    }
+
+    @Test
+    fun `selectTab navigates mid-transition when debounceRapidTabSwitches is false`() {
+        // Opt-out: with the debounce disabled, a STARTED current entry (in-flight
+        // transition) must NOT block the switch - raw Jetpack Navigation behaviour.
+        val tabs = listOf(
+            FakeTab("home_tab", "home"),
+            FakeTab("settings_tab", "settings"),
+        )
+        val rootController = TestNavHostController(RuntimeEnvironment.getApplication()).apply {
+            setLifecycleOwner(lifecycleOwnerAt(Lifecycle.State.STARTED))
+            navigatorProvider.addNavigator(ComposeNavigator())
+            setGraph(
+                createGraph(startDestination = "home_tab") {
+                    composable("home_tab") {}
+                    composable("settings_tab") {}
+                },
+                null,
+            )
+        }
+        val state = MultitabState(
+            tabs = tabs,
+            rootNavController = rootController,
+            selectedTab = mutableStateOf("home_tab"),
+            debounceRapidTabSwitches = false,
+        )
+
+        state.selectTab("settings_tab")
+
+        assertEquals(
+            "debounce disabled - switch must go through even mid-transition",
+            "settings_tab",
+            rootController.currentDestination?.route,
+        )
     }
 
     @Test

@@ -6,7 +6,7 @@
 **Языки:** [English](README.md) · **Русский**
 
 [![CI](https://github.com/chisarabiVorts/tessera/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/chisarabiVorts/tessera/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](https://github.com/chisarabiVorts/tessera/releases)
+[![Version](https://img.shields.io/badge/version-0.1.1-blue)](https://github.com/chisarabiVorts/tessera/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.21-purple)](https://kotlinlang.org/)
 [![Compose](https://img.shields.io/badge/compose-BOM%202024.09-orange)](https://developer.android.com/jetpack/compose)
@@ -94,8 +94,8 @@ Tessera добавляет три вещи поверх этой конвенц�
 TL;DR: Tessera публикуется через JitPack, два артефакта:
 
 ```kotlin
-implementation("com.github.chisarabiVorts.tessera:tessera:0.1.0")
-implementation("com.github.chisarabiVorts.tessera:tessera-hilt:0.1.0")  // опционально, Hilt-биндинги
+implementation("com.github.chisarabiVorts.tessera:tessera:0.1.1")
+implementation("com.github.chisarabiVorts.tessera:tessera-hilt:0.1.1")  // опционально, Hilt-биндинги
 ```
 
 Полный walkthrough установки (репозитории, поднятие Application/Activity,
